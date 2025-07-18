@@ -1,1 +1,240 @@
+# -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
+# // BLOCK: IMPORT MODUL
+# -----------------------------------------------------------------------------
+# Modul 'json' digunakan untuk serialisasi dan deserialisasi data (mengubah
+# dictionary Python menjadi string JSON dan sebaliknya).
+# Modul 'os' digunakan untuk berinteraksi dengan sistem operasi, khususnya
+# untuk memeriksa keberadaan file dengan 'os.path.exists'.
+# -----------------------------------------------------------------------------
+import json
+import os
 
+# -----------------------------------------------------------------------------
+# // BLOCK: KONSTANTA GLOBAL
+# -----------------------------------------------------------------------------
+# Mendefinisikan nama file database sebagai konstanta global.
+# Ini memudahkan jika suatu saat nama file perlu diubah, cukup di satu tempat.
+# -----------------------------------------------------------------------------
+NAMA_FILE = 'inventory.json'
+
+# -----------------------------------------------------------------------------
+# // BLOCK: FUNGSI MANAJEMEN FILE
+# -----------------------------------------------------------------------------
+
+def muat_inventori():
+    """
+    Tujuan: Memuat data inventori dari file JSON.
+    Proses:
+    1. Cek apakah file NAMA_FILE sudah ada di direktori.
+    2. Jika tidak ada, fungsi ini akan mengembalikan sebuah dictionary Python
+       dengan data inventori awal (hardcoded). Ini untuk penggunaan pertama kali.
+    3. Jika file ada, buka file tersebut, baca kontennya, dan gunakan json.load()
+       untuk mengubah string JSON menjadi dictionary Python.
+    Return: (dict) Dictionary berisi data inventori.
+    """
+    if not os.path.exists(NAMA_FILE):
+        return {
+            "Teh Botol Sosro": 50, "Coca-Cola 250ml": 45, "Aqua 600ml": 60,
+            "Pocari Sweat": 30, "Kopi Susu Gula Aren": 25, "Jus Jambu": 20,
+            "Susu Ultra Cokelat": 40, "Sprite 250ml": 35
+        }
+    with open(NAMA_FILE, 'r') as file:
+        return json.load(file)
+
+def simpan_inventori(data):
+    """
+    Tujuan: Menyimpan state (keadaan) terakhir dari inventori ke file JSON.
+    Proses:
+    1. Membuka file NAMA_FILE dalam mode 'write' ('w'), yang akan menimpa
+       file yang ada atau membuat file baru jika belum ada.
+    2. Menggunakan json.dump() untuk menulis dictionary ke dalam file.
+       'indent=4' digunakan agar format file JSON rapi dan mudah dibaca manusia.
+    Parameter:
+    - data (dict): Dictionary inventori yang akan disimpan.
+    Return: None
+    """
+    with open(NAMA_FILE, 'w') as file:
+        json.dump(data, file, indent=4)
+
+# -----------------------------------------------------------------------------
+# // BLOCK: FUNGSI FITUR INVENTORI
+# -----------------------------------------------------------------------------
+
+def tampilkan_inventori(inventori):
+    """
+    Tujuan: Mencetak daftar inventori ke konsol dalam format tabel.
+    Proses:
+    1. Cetak header tabel.
+    2. Cek jika dictionary inventori kosong.
+    3. Jika tidak kosong, hitung panjang nama barang terpanjang untuk menentukan
+       lebar kolom agar tampilan rapi.
+    4. Lakukan iterasi pada item dictionary yang sudah diurutkan berdasarkan nama
+       (sorted(inventori.items())) dan cetak setiap baris.
+    Parameter:
+    - inventori (dict): Dictionary inventori saat ini.
+    Return: None
+    """
+    print("\n--- STOK BARANG SAAT INI ---")
+    if not inventori:
+        print("Inventori kosong.")
+    else:
+        lebar_kolom = max(len(barang) for barang in inventori.keys()) + 3
+        print(f"{'Nama Barang'.ljust(lebar_kolom)}| {'Stok'}")
+        print("-" * (lebar_kolom + 8))
+        for barang, stok in sorted(inventori.items()):
+            print(f"{barang.ljust(lebar_kolom)}| {stok}")
+    print("----------------------------\n")
+
+
+def tambah_barang(inventori):
+    """
+    Tujuan: Menambahkan entri barang baru ke dalam dictionary inventori.
+    Proses:
+    1. Minta input nama barang dari user.
+    2. Validasi: cek apakah nama barang sudah ada. Jika ya, batalkan.
+    3. Minta input jumlah stok awal. Gunakan loop `while True` dengan `try-except`
+       untuk memastikan input adalah integer yang valid dan tidak negatif.
+    4. Tambahkan pasangan key-value baru ke dictionary inventori.
+    Parameter:
+    - inventori (dict): Dictionary inventori yang akan dimodifikasi.
+    Return: None
+    """
+    nama_barang = input("Masukkan nama barang baru: ").strip()
+    if nama_barang in inventori:
+        print(f"Error: '{nama_barang}' sudah ada di inventori. Gunakan menu 'Perbarui Stok'.")
+        return
+    while True:
+        try:
+            stok = int(input(f"Masukkan jumlah stok awal untuk '{nama_barang}': "))
+            if stok < 0:
+                print("Stok tidak boleh negatif.")
+                continue
+            break
+        except ValueError:
+            print("Error: Masukkan hanya angka untuk stok.")
+            
+    inventori[nama_barang] = stok
+    print(f"Berhasil! '{nama_barang}' dengan stok {stok} telah ditambahkan.")
+
+
+def perbarui_stok(inventori):
+    """
+    Tujuan: Mengubah jumlah stok barang yang sudah ada.
+    Proses:
+    1. Minta input nama barang yang akan diubah.
+    2. Validasi: cek apakah barang tersebut ada di inventori.
+    3. Tampilkan stok saat ini.
+    4. Minta input jumlah perubahan (bisa positif untuk penambahan, negatif untuk penjualan).
+       Validasi input harus berupa angka.
+    5. Validasi Logika: pastikan stok tidak menjadi negatif setelah perubahan.
+    6. Update nilai stok di dictionary.
+    Parameter:
+    - inventori (dict): Dictionary inventori yang akan dimodifikasi.
+    Return: None
+    """
+    nama_barang = input("Masukkan nama barang yang akan diperbarui: ").strip()
+    if nama_barang not in inventori:
+        print(f"Error: '{nama_barang}' tidak ditemukan di inventori.")
+        return
+
+    print(f"Stok '{nama_barang}' saat ini: {inventori[nama_barang]}")
+    while True:
+        try:
+            perubahan = int(input("Masukkan perubahan stok (contoh: -5 untuk terjual 5, 10 untuk menambah 10): "))
+            break
+        except ValueError:
+            print("Error: Masukkan hanya angka.")
+
+    if inventori[nama_barang] + perubahan < 0:
+        print(f"Error: Stok tidak mencukupi. Stok saat ini {inventori[nama_barang]}, tidak bisa dikurangi {abs(perubahan)}.")
+    else:
+        inventori[nama_barang] += perubahan
+        print(f"Stok '{nama_barang}' berhasil diperbarui menjadi {inventori[nama_barang]}.")
+
+
+def hapus_barang(inventori):
+    """
+    Tujuan: Menghapus sebuah entri barang dari inventori.
+    Proses:
+    1. Minta input nama barang yang akan dihapus.
+    2. Validasi: cek apakah barang tersebut ada.
+    3. Minta konfirmasi dari user ('y/n') untuk mencegah penghapusan yang tidak disengaja.
+    4. Jika dikonfirmasi, gunakan 'del' untuk menghapus key dari dictionary.
+    Parameter:
+    - inventori (dict): Dictionary inventori yang akan dimodifikasi.
+    Return: None
+    """
+    nama_barang = input("Masukkan nama barang yang akan dihapus: ").strip()
+    if nama_barang not in inventori:
+        print(f"Error: '{nama_barang}' tidak ditemukan di inventori.")
+        return
+        
+    konfirmasi = input(f"Apakah Anda yakin ingin menghapus '{nama_barang}'? (y/n): ").lower()
+    if konfirmasi == 'y':
+        del inventori[nama_barang]
+        print(f"'{nama_barang}' telah dihapus dari inventori.")
+    else:
+        print("Penghapusan dibatalkan.")
+
+# -----------------------------------------------------------------------------
+# // BLOCK: FUNGSI UTAMA (MAIN LOOP)
+# -----------------------------------------------------------------------------
+
+def main():
+    """
+    Tujuan: Sebagai entry point dan pengendali utama alur aplikasi.
+    Proses:
+    1. Panggil muat_inventori() untuk mendapatkan data awal.
+    2. Masuk ke dalam `while True` loop untuk menjaga aplikasi tetap berjalan
+       sampai user memilih untuk keluar.
+    3. Tampilkan menu pilihan kepada user.
+    4. Ambil input pilihan user.
+    5. Gunakan struktur `if/elif/else` untuk memanggil fungsi yang sesuai
+       dengan pilihan user.
+    6. Setelah setiap operasi yang mengubah data (tambah, perbarui, hapus),
+       panggil simpan_inventori() untuk menyimpan perubahan ke file.
+    7. Jika user memilih keluar, panggil simpan_inventori() sekali lagi untuk
+       memastikan data terakhir tersimpan, lalu hentikan loop dengan `break`.
+    Return: None
+    """
+    inventori = muat_inventori()
+    
+    while True:
+        print("\n===== Sistem Manajemen Inventori Toko Minuman =====")
+        print("1. Lihat Semua Stok Barang")
+        print("2. Tambah Barang Baru")
+        print("3. Perbarui Stok Barang (Jual/Tambah)")
+        print("4. Hapus Barang")
+        print("5. Keluar")
+        
+        pilihan = input("Pilih menu (1-5): ")
+        
+        if pilihan == '1':
+            tampilkan_inventori(inventori)
+        elif pilihan == '2':
+            tambah_barang(inventori)
+            simpan_inventori(inventori)
+        elif pilihan == '3':
+            perbarui_stok(inventori)
+            simpan_inventori(inventori)
+        elif pilihan == '4':
+            hapus_barang(inventori)
+            simpan_inventori(inventori)
+        elif pilihan == '5':
+            simpan_inventori(inventori)
+            print("Terima kasih! Data inventori telah disimpan.")
+            break
+        else:
+            print("Pilihan tidak valid. Silakan coba lagi.")
+
+# -----------------------------------------------------------------------------
+# // BLOCK: ENTRY POINT SCRIPT
+# -----------------------------------------------------------------------------
+# Konstruksi `if __name__ == "__main__"` adalah standar dalam Python.
+# Ini memastikan bahwa fungsi `main()` hanya akan dieksekusi ketika file ini
+# dijalankan sebagai script utama, bukan ketika diimpor sebagai modul oleh
+# script lain.
+# -----------------------------------------------------------------------------
+if __name__ == "__main__":
+    main()
